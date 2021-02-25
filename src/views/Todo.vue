@@ -152,8 +152,16 @@ export default {
       }, delay);
     },
     // 单个备忘修改时触发更新，写入缓存
-    saveData() {
-      localStorage.setItem('todos', JSON.stringify(this.todos));
+    saveData(todo) {
+      if (todo.completed) {
+        // 修改备忘状态
+        this.allCompletedTodos.unshift(todo);
+        this.removeTodo(todo); // 删除操作，也会触发缓存内容缓存
+        localStorage.setItem('all-completed-todos', JSON.stringify(this.allCompletedTodos));
+      } else {
+        // 修改备忘内容
+        localStorage.setItem('todos', JSON.stringify(this.todos));
+      }
     },
   },
   // directives: {
