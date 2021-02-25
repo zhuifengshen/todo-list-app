@@ -6,7 +6,7 @@
         <!-- 输入备忘内容，按 Enter 键时触发添加 -->
         <input class="new-todo" placeholder="你接下来要做什么？" v-model="newTodo" v-autofocus @keyup.enter="addTodo" />
       </header>
-      <section class="main" v-show="todos.length">
+      <section class="main" v-show="todos.length || completedTodos.length">
         <!-- 操作过渡动画 -->
         <transition-group
           name="staggered-fade"
@@ -24,33 +24,27 @@
             <todo-item v-bind.sync="todo" @delete="removeTodo(todo)" @modified="saveData(todo)"></todo-item>
           </li>
         </transition-group>
-        <footer class="footer" v-show="todos.length">
+        <footer class="footer">
           <!-- 未完成数量，支持单复数显示 -->
           <span class="todo-count">
             <strong>{{ remaining }}</strong> {{ remaining | pluralize }} left
           </span>
           <!-- 备忘筛选 -->
           <ul class="filters">
-            <li>
-              <router-link :to="{ query: { state: '' } }" active-class="selected" exact>All</router-link>
-            </li>
-            <li>
-              <router-link :to="{ query: { state: 'active' } }" active-class="selected" exact> Active</router-link>
-            </li>
-            <li>
-              <router-link :to="{ query: { state: 'completed' } }" active-class="selected" exact>completed</router-link>
-            </li>
+            <li><a style="cursor: pointer" @click="clearTodos">clear todos</a></li>
+            <li><a style="cursor: pointer" @click="clearCompletedTodos">clear completed</a></li>
+            <li><a style="cursor: pointer" @click="clearAllTodos">clear all</a></li>
           </ul>
-          <!-- 一键删除已完成的备忘按钮 -->
-          <button class="clear-completed" @click="removeCompleted" v-show="todos.length > remaining">
-            Clear completed
+          <!-- 一键完成按钮 -->
+          <button class="clear-completed" @click="completeAllTodo" v-show="remaining">
+            complete all
           </button>
         </footer>
       </section>
     </section>
     <section>
       <ul>
-        <li v-for="todo in allCompletedTodos" :key="todo.id">
+        <li v-for="todo in completedTodos" :key="todo.id">
           Title：{{ todo.title }} Completed：{{ todo.complete_time.substring(0, 10) }}
         </li>
       </ul>
@@ -70,7 +64,7 @@ export default {
     return {
       id: localStorage.getItem('todo-id') || 1, // 备忘递增ID
       todos: JSON.parse(localStorage.getItem('todos') || '[]'), // 备忘列表
-      allCompletedTodos: JSON.parse(localStorage.getItem('all-completed-todos') || '[]'), // 弹窗信息
+      completedTodos: JSON.parse(localStorage.getItem('all-completed-todos') || '[]'), // 弹窗信息
       newTodo: '', // 新增的备忘内容
     };
   },
@@ -80,27 +74,18 @@ export default {
       localStorage.setItem('todos', JSON.stringify(newVal));
       localStorage.setItem('todo-id', this.id);
     },
+    completedTodos(newVal) {
+      localStorage.setItem('all-completed-todos', JSON.stringify(newVal));
+    },
   },
   computed: {
     // 计算剩余未完成的备忘
     remaining() {
       return this.todos.filter(x => !x.completed).length;
     },
-    // 筛选备忘
+    // 根据输入筛选备忘
     computedTodos() {
-      // 先按状态过滤
-      const state = this.$route.query.state;
-      const filterTodos = this.todos.filter(x => {
-        if (state === 'active') {
-          return !x.completed;
-        } else if (state === 'completed') {
-          return x.completed;
-        } else {
-          return true;
-        }
-      });
-      // 再按输入内容过滤
-      return filterTodos.filter(item => item.title.toLowerCase().indexOf(this.newTodo.toLowerCase()) !== -1);
+      return this.todos.filter(item => item.title.toLowerCase().indexOf(this.newTodo.toLowerCase()) !== -1);
     },
   },
   methods: {
@@ -123,9 +108,28 @@ export default {
       const index = this.todos.findIndex(x => x.id === todo.id);
       this.todos.splice(index, 1);
     },
-    // 删除已完成的备忘
-    removeCompleted() {
-      this.todos = this.todos.filter(x => !x.completed);
+    // 一键完成所有备忘
+    completeAllTodo() {
+      this.completedTodos = this.todos
+        .map(x => {
+          x.complete_time = new Date().Format('yyyy-MM-dd hh:mm:ss');
+          return x;
+        })
+        .concat(this.completedTodos);
+      this.todos = [];
+    },
+    // 清空当前 todos
+    clearTodos() {
+      this.todos = [];
+    },
+    // 清空已完成 todos
+    clearCompletedTodos() {
+      this.completedTodos = [];
+    },
+    // 清空所有 todos
+    clearAllTodos() {
+      this.todos = [];
+      this.completedTodos = [];
     },
     // 进入中
     beforeEnter(el) {
@@ -154,10 +158,9 @@ export default {
     // 单个备忘修改时触发更新，写入缓存
     saveData(todo) {
       if (todo.completed) {
-        // 修改备忘状态
-        this.allCompletedTodos.unshift(todo);
-        this.removeTodo(todo); // 删除操作，也会触发缓存内容缓存
-        localStorage.setItem('all-completed-todos', JSON.stringify(this.allCompletedTodos));
+        // 修改备忘状态（自动触发更新缓存）
+        this.completedTodos.unshift(todo);
+        this.removeTodo(todo);
       } else {
         // 修改备忘内容
         localStorage.setItem('todos', JSON.stringify(this.todos));
