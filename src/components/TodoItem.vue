@@ -81,7 +81,7 @@ export default {
     removeTodo() {
       confirmDialog({ text: '确认要删除吗？' })
         .then(() => this.$emit('delete'))
-        .catch(() => console.log('用户点击了取消！'));
+        .catch(() => console.log('用户点击了取消按钮！'));
     },
   },
   // directives: {

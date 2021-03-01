@@ -1,5 +1,7 @@
 # Todo List App
+
 一款基于 Vue 的非常简洁优雅的 ToDo List App，支持功能如下：
+
 - 添加备忘；
 - 双击更新备忘；
 - 标记备忘完成；
@@ -7,7 +9,10 @@
 
 ![应用截图示例](./src/assets/sample.png)
 
+-> [点击访问在线地址](https://zhuifengshen.github.io/todo-list-app/) <-
+
 ## 开发和部署
+
 ```
 # 安装依赖
 npm install
@@ -20,6 +25,9 @@ npm run build
 
 # 代码检测
 npm run lint
+
+# 一键部署
+npm run deploy
 
 # 更多配置
 查看配置文档：https://cli.vuejs.org/config/
